@@ -20,7 +20,7 @@ export class AuthService {
 
     async Register(user: UserDto): Promise<UserDto> {
         const userExisting = await this.userDb.GetOne({ where: { email: user.email } });
-        
+
         if (userExisting) throw new UnauthorizedException('El email ya esta registrado.');
 
         const hash = await this.hasher.Hash(user.password);
@@ -35,13 +35,13 @@ export class AuthService {
         return this.toDto(newUser);
     }
 
-    async Login(email: string, dbPasswornd: string): Promise<string> {
-        const userExisting = await this.userDb.GetOne({ where: { email: email } });
-        const valid = userExisting ? (await this.hasher.Verify(dbPasswornd, userExisting.password)) : false;
-        if (!userExisting || !valid) throw new UnauthorizedException('Credenciales invalidas.');
+    async Login(email: string, dbPasswornd: string) {
+        const user = await this.userDb.GetOne({ where: { email: email } });
+        const valid = user ? (await this.hasher.Verify(dbPasswornd, user.password)) : false;
+        if (!user || !valid) throw new UnauthorizedException('Credenciales invalidas.');
 
-        const accessToken = await this.jwt.signAsync({ sub: userExisting.id, email: userExisting.email });
-        return accessToken;
+        const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email });
+        return { accessToken, user};
     }
 
 

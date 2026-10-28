@@ -17,6 +17,7 @@ model User {
   email         String         @unique
   name          String?
   password      String
+  phone String?
   createdAt     DateTime       @default(now())
   notifications Notifications[]
 }
@@ -26,7 +27,6 @@ model Notifications {
   userId    String
   message   String
   type      String   @default("email")
-  status    String   @default("sent")
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 

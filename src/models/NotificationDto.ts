@@ -4,10 +4,10 @@ export class NotificationDto {
     id: string;
     message: string;
     type: string;
-    status: string;
     userId: string;
     read: boolean = false;
-
+    createdAt: Date;
+    
     constructor(init: Partial<NotificationDto>) {
         Object.assign(this, init);
     }
