@@ -6,7 +6,7 @@ import { NotificationDto } from '../models/NotificationDto.js';
 import { interval, map, merge, Observable } from 'rxjs';
 import { NotificationStreamService } from './notification.stream.service.js';
 import { SendNotificationDto } from '../models/SendNotificationDto.js';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiCreateNotification, ApiDeleteNotification, ApiNotifications, ApiReadNotification, ApiSendNotification, ApiUpdateNotification } from './notification.docs.js';
 
 @Controller('notification')
