@@ -3,21 +3,22 @@ import { AuthService } from './auth.service.js';
 import { UserDto } from '../models/UserDto.js';
 import type { Response } from 'express'
 import { ConfigService } from '@nestjs/config';
+import { ApiBody, ApiNotAcceptableResponse, ApiOperation, ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiLogin, ApiLogout, ApiRegister } from './auth.docs.js';
 
 @Controller('auth')
+@ApiTags('Autenticación')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly config: ConfigService
   ) { }
 
+  
   @Post('login')
-  async Login(
-    @Body('email') email: string,
-    @Body('password') userPasword: string,
-    @Res({ passthrough: true }) res: Response
-  ) {
-    const { accessToken, user } = await this.authService.Login(email, userPasword);
+  @ApiLogin()
+  async Login(@Body('email') email: string, @Body('password') userPassword: string, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, user } = await this.authService.Login(email, userPassword);
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
@@ -26,18 +27,20 @@ export class AuthController {
       path: '/',
       maxAge: Number(this.config.get('JWT_EXPIRES_IN_SECONDS') ?? 3600) * 1000
     })
+
     const { password, ...rest } = user;
-    return { rest }
+    return { rest };
   }
 
   @Post('register')
+  @ApiRegister()
   async Register(@Body() user: UserDto) {
-    const { id, ...rest } = await this.authService.Register(user);
+    const { id, password, ...rest } = await this.authService.Register(user);
     return rest;
   }
 
   @Post('logout')
-  @HttpCode(204)
+  @ApiLogout()
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', {
       httpOnly: true,

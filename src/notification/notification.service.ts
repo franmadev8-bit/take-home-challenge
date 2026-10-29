@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationRepository } from '../repositories/NotificationRepository.js';
 import { Notifications } from '../generated/prisma/client.js';
 import { NotificationDto } from '../models/NotificationDto.js';
@@ -30,19 +30,13 @@ export class NotificationService {
         });
     }
 
-    private async sendEmails(notifications: { userId: string; message: string; type: string }[]) {
-        const users = await this.users.Get({ where: { id: { in: notifications.map((n) => n.userId) } } });
-        const emailById = new Map(users.map((u) => [u.id, u.email]));
+    private async sendEmails(notification: NotificationDto, userIds: string[]) {
+        const users = await this.users.Get({ where: { id: { in: userIds } } });
         const appName = this.config.get<string>('APP_NAME') ?? 'Notificaciones';
+        const { subject, html, text } = notificationEmailTemplate({ message: notification.message, type: notification.type, appName });
 
         const results = await Promise.allSettled(
-            notifications.map(async (n) => {
-                const to = emailById.get(n.userId);
-                if (!to) return;
-
-                const { subject, html, text } = notificationEmailTemplate({ message: n.message, type: n.type, appName });
-                await this.mail.send({ to, subject, html, text });
-            }),
+            users.map((u) => this.mail.send({ to: u.email, subject, html, text }))
         );
 
         results
@@ -50,16 +44,11 @@ export class NotificationService {
             .forEach((r) => this.logger.warn(`No se pudo enviar un mail: ${r.reason}`));
     }
 
-    private async sendSms(notifications: { userId: string; message: string }[]) {
-        const users = await this.users.Get({ where: { id: { in: notifications.map((n) => n.userId) } } });
-        const phoneById = new Map(users.map((u) => [u.id, u.phone]));
+    private async sendSms(notification: NotificationDto, userIds: string[]) {
+        const users = await this.users.Get({ where: { id: { in: userIds } } });
 
         const results = await Promise.allSettled(
-            notifications.map(async (n) => {
-                const to = phoneById.get(n.userId);
-                if (!to) return;
-                await this.sms.send(to, n.message);
-            }),
+            users.map((u) => this.sms.send(u.phone!, notification.message))
         );
 
         results
@@ -67,24 +56,33 @@ export class NotificationService {
             .forEach((r) => this.logger.warn(`No se pudo enviar un SMS: ${r.reason}`));
     }
 
-    async send(userIds: string[], message: string, type: string): Promise<NotificationDto[]> {
+    async send(ownerId: string, userIds: string[], idNotification: string): Promise<NotificationDto> {
         const uniqueIds = [...new Set(userIds)];
+        const notification = await this.notification.GetOne({ where: { user: { id: ownerId }, id: idNotification } });
+        if (!notification) throw new NotFoundException('Notificación no encontrada.');
 
-        const created = await Promise.all(
-            uniqueIds.map((userId) => this.notification.Create({ data: { userId, message, type } })),
-        );
+        const dto = this.toDto(notification);
 
-        const dtos = created.map((n) => this.toDto(n));
-        created.forEach((n, i) => this.stream.publish(n.userId, dtos[i]));
-
-        if (type === 'email') {
-            this.sendEmails(created).catch((err: Error) => this.logger.error(`Error enviando mails: ${err.message}`));
+        switch (notification.type) {
+            case 'email':
+                this.sendEmails(dto, uniqueIds).catch((err: Error) => {
+                    this.logger.error(`Error enviando mails: ${err.message}`);
+                    throw new BadRequestException(err.message)
+                });
+                break;
+            case 'sms':
+                this.sendSms(dto, uniqueIds).catch((err: Error) => {
+                    this.logger.error(`Error enviando SMS: ${err.message}`);
+                    throw new BadRequestException(err.message);
+                });
+                break;
+            case 'push':
+                uniqueIds.forEach((u) => this.stream.publish(u, dto))
+                break;
+            default: break;
         }
 
-        if (type === 'sms') {
-            this.sendSms(created).catch((err: Error) => this.logger.error(`Error enviando SMS: ${err.message}`));
-        }
-        return dtos;
+        return dto;
     }
 
     async Notifications(id: string): Promise<NotificationDto[]> {
@@ -130,7 +128,7 @@ export class NotificationService {
 
     async markAsRead(userId: string, id: string): Promise<NotificationDto> {
         const [notification] = await this.notification.Get({ where: { id, userId } });
-        if (!notification) throw new NotFoundException('Notificación no encontrada');
+        if (!notification) throw new NotFoundException('Notificación no encontrada.');
 
         const updated = await this.notification.Update({ where: { id }, data: { read: true } });
         return this.toDto(updated);
