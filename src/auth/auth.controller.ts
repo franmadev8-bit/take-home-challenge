@@ -1,9 +1,9 @@
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { UserDto } from '../models/UserDto.js';
 import type { Response } from 'express'
 import { ConfigService } from '@nestjs/config';
-import { ApiBody, ApiNotAcceptableResponse, ApiOperation, ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { ApiLogin, ApiLogout, ApiRegister } from './auth.docs.js';
 
 @Controller('auth')
@@ -14,7 +14,7 @@ export class AuthController {
     private readonly config: ConfigService
   ) { }
 
-  
+
   @Post('login')
   @ApiLogin()
   async Login(@Body('email') email: string, @Body('password') userPassword: string, @Res({ passthrough: true }) res: Response) {
