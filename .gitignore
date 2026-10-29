@@ -22,5 +22,6 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+.db
 
 /src/generated/prisma
