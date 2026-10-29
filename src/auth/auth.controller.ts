@@ -1,17 +1,20 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { UserDto } from '../models/UserDto.js';
 import type { Response } from 'express'
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiLogin, ApiLogout, ApiRegister } from './auth.docs.js';
+import { TokenRevocationService } from './token-revocation.service.js';
+import { AuthGuard, JwtPayload } from './auth.guard.js';
 
 @Controller('auth')
 @ApiTags('Autenticación')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly revocation: TokenRevocationService,
   ) { }
 
 
@@ -41,7 +44,9 @@ export class AuthController {
 
   @Post('logout')
   @ApiLogout()
-  logout(@Res({ passthrough: true }) res: Response) {
+  @UseGuards(AuthGuard)
+  async logout(@Req() req: Request & { user: JwtPayload }, @Res({ passthrough: true }) res: Response) {
+    await this.revocation.revoke(req.user.jti, req.user.exp);
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: this.config.get('NODE_ENV') === 'production',

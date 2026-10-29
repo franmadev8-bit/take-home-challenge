@@ -22,13 +22,13 @@ export const ApiLogin = () =>
             },
         }),
         ApiResponse({
-            status: 200,
+            status: 201,
             description: 'Login correcto',
             example: {
-                id: '79159191-123f-4d47-9c51-f4abe1783b4e',
-                name: 'Fran',
-                email: 'fran@test.com',
-                phone: '+5493492123456',
+                id: 'string',
+                name: 'string',
+                email: 'string',
+                phone: 'string',
                 createdAt: '2026-10-29T05:37:00.000Z',
             }
         })

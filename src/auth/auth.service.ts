@@ -4,6 +4,7 @@ import { UserDto } from '../models/UserDto.js';
 import { User } from '../generated/prisma/client.js';
 import { PasswordHasherService } from '../common/PasswordHasherService.js';
 import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -40,8 +41,8 @@ export class AuthService {
         const valid = user ? (await this.hasher.Verify(dbPasswornd, user.password)) : false;
         if (!user || !valid) throw new UnauthorizedException('Credenciales invalidas.');
 
-        const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email });
-        return { accessToken, user};
+        const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email }, { jwtid: randomUUID() },);
+        return { accessToken, user };
     }
 
 

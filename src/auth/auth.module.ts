@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthGuard } from './auth.guard.js';
 import { UserRepository } from '../repositories/UsersRepository.js';
 import { ConfigService } from '@nestjs/config';
+import { TokenRevocationService } from './token-revocation.service.js';
 
 @Module({
   imports: [JwtModule.registerAsync({
@@ -16,8 +17,8 @@ import { ConfigService } from '@nestjs/config';
     }),
 
   })],
-  exports: [AuthGuard, JwtModule],
+  exports: [AuthGuard, JwtModule, TokenRevocationService],
   controllers: [AuthController],
-  providers: [AuthService, UserRepository, PasswordHasherService, AuthGuard],
+  providers: [AuthService, UserRepository, PasswordHasherService, AuthGuard, TokenRevocationService],
 })
 export class AuthModule { }

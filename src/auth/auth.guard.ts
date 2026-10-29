@@ -1,15 +1,21 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { TokenRevocationService } from './token-revocation.service.js';
 
 export interface JwtPayload {
   sub: string;
   email: string;
+  jti: string;
+  exp: number;
 }
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwt: JwtService) { }
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly revocation: TokenRevocationService,
+  ) { }
 
   private extractToken(request: Request): string | undefined {
     const fromCookie = request.cookies?.access_token as string | undefined;
@@ -25,11 +31,19 @@ export class AuthGuard implements CanActivate {
 
     if (!token) throw new UnauthorizedException();
 
+    let payload: JwtPayload;
     try {
-      request.user = await this.jwt.verifyAsync(token);
-      return true;
+      payload = await this.jwt.verifyAsync<JwtPayload>(token);
     } catch {
       throw new UnauthorizedException('Token inválido o vencido');
     }
+
+    const isRevoked = await this.revocation.isRevoked(payload.jti)
+    if (!payload.jti || isRevoked) {
+      throw new UnauthorizedException('Sesión cerrada');
+    }
+
+    request.user = payload;
+    return true;
   }
 }

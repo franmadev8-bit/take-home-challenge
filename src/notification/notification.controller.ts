@@ -62,9 +62,9 @@ export class NotificationController {
     return this.notificationService.markAsRead(userId, id);
   }
 
-  @Delete('drop')
+  @Delete('drop/:id')
   @ApiDeleteNotification()
-  async Delete(id: string): Promise<boolean> {
+  async Delete(@Param('id', ParseUUIDPipe) id: string): Promise<boolean> {
     return await this.notificationService.DeleteNotification(id);
   }
 }

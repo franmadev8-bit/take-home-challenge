@@ -1,4 +1,4 @@
-import { Notifications, Prisma, User } from '../generated/prisma/client.js';
+import { Notifications, Prisma, RevokedToken, User } from '../generated/prisma/client.js';
 
 
 export type ModelName = Prisma.ModelName;
@@ -11,6 +11,7 @@ export type Args<M extends ModelName, Op extends keyof Ops<M>> = Ops<M>[Op] exte
 type EntityMap = {
     User: User;
     Notifications: Notifications;
+    RevokedToken: RevokedToken;
 }
 
 export type Entity<M extends ModelName> = EntityMap[M];

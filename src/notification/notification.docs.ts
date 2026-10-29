@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common"
-import { ApiBadRequestResponse, ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation } from "@nestjs/swagger"
+import { ApiBadRequestResponse, ApiBody, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiUnauthorizedResponse } from "@nestjs/swagger"
 import { NotificationDto } from "../models/NotificationDto.js"
 
 export const ApiNotifications = () => applyDecorators(

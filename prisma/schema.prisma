@@ -32,3 +32,11 @@ model Notifications {
 
   user User @relation(fields: [userId], references: [id])
 }
+
+
+model RevokedToken {
+  jti       String   @id
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
